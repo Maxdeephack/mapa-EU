@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manuel Cumbrera: Uso de Combustibles Renovables (UE)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 70vh;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 60%;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            text-align: center;
+            padding: 10px;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Manuel Cumbrera: Uso de Combustibles Renovables en el Transporte (UE)</h1>
+    <div id="map"></div>
+    <h2 style="text-align: center;">Tabla de Uso de Combustibles Renovables</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>País</th>
+                <th>Porcentaje (%)</th>
+                <th>Color</th>
+            </tr>
+        </thead>
+        <tbody id="data-table"></tbody>
+    </table>
+    <script>
+        // Inicializar el mapa
+        const map = L.map('map').setView([54.526, 15.2551], 5);
+
+        // Capa base del mapa
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Datos ficticios: Uso de combustibles renovables por país (en %)
+        const renewableData = {
+            "Austria": 20,
+            "Bélgica": 10,
+            "Bulgaria": 15,
+            "Croacia": 18,
+            "Chipre": 8,
+            "Chequia": 12,
+            "Dinamarca": 25,
+            "Estonia": 30,
+            "Finlandia": 35,
+            "Francia": 18,
+            "Alemania": 22,
+            "Grecia": 10,
+            "Hungría": 14,
+            "Irlanda": 12,
+            "Italia": 13,
+            "Letonia": 28,
+            "Lituania": 25,
+            "Luxemburgo": 9,
+            "Malta": 7,
+            "Países Bajos": 15,
+            "Polonia": 11,
+            "Portugal": 20,
+            "Rumanía": 19,
+            "Eslovaquia": 12,
+            "Eslovenia": 16,
+            "España": 22,
+            "Suecia": 45
+        };
+
+        // Función para asignar colores según el porcentaje
+        function getColor(percentage) {
+            return percentage > 40 ? '#006837' : // Verde oscuro
+                   percentage > 20 ? '#31a354' : // Verde medio
+                   percentage > 10 ? '#78c679' : // Verde claro
+                                     '#c2e699';  // Amarillo claro
+        }
+
+        // GeoJSON de países de la UE
+        const geojsonUrl = 'https://raw.githubusercontent.com/leakyMirror/map-of-europe/master/GeoJSON/europe.geojson';
+
+        // Cargar GeoJSON y estilizar según los datos
+        fetch(geojsonUrl)
+            .then(response => response.json())
+            .then(data => {
+                L.geoJson(data, {
+                    style: feature => {
+                        const countryName = feature.properties.NAME;
+                        const spanishName = Object.keys(renewableData).find(name => name === countryName);
+                        const percentage = spanishName ? renewableData[spanishName] : 0;
+                        return {
+                            fillColor: getColor(percentage),
+                            weight: 1,
+                            color: 'white',
+                            fillOpacity: 0.8
+                        };
+                    },
+                    onEachFeature: (feature, layer) => {
+                        const countryName = feature.properties.NAME;
+                        const spanishName = Object.keys(renewableData).find(name => name === countryName);
+                        const percentage = spanishName ? renewableData[spanishName] : "No disponible";
+                        layer.bindPopup(`<strong>${spanishName || countryName}</strong><br>Uso de renovables: ${percentage}%`);
+                    }
+                }).addTo(map);
+
+                // Crear la tabla
+                const tableBody = document.getElementById('data-table');
+                Object.entries(renewableData).forEach(([country, percentage]) => {
+                    const row = document.createElement('tr');
+                    const color = getColor(percentage);
+                    row.innerHTML = `
+                        <td>${country}</td>
+                        <td>${percentage}%</td>
+                        <td style="background-color: ${color};"></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            });
+    </script>
+</body>
+</html>
+
